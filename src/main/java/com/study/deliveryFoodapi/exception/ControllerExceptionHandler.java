@@ -24,7 +24,7 @@ public class ControllerExceptionHandler extends ResponseEntityExceptionHandler {
 
   private static final String UNPROCESSABLE_ENTITY_MESSAGE = "Unprocessable Entity";
 
-  @ExceptionHandler({ DataIntegrityViolationException.class, MethodArgumentTypeMismatchException.class, CategoryException.class})
+  @ExceptionHandler({ DataIntegrityViolationException.class, MethodArgumentTypeMismatchException.class, CategoryException.class, ProductException.class})
   public ResponseEntity<ApiError> handleExceptions(RuntimeException ex) {
     log.error("Error: ", ex);
     return new ResponseEntity<>(
