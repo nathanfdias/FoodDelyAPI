@@ -1,0 +1,17 @@
+{"properties": [
+  {
+    "name": "foodDely.jwt.refresh.expiration",
+    "type": "java.lang.String",
+    "description": "JWT expiration refresh token value"
+  },
+  {
+    "name": "foodDely.jwt.expiration",
+    "type": "java.lang.String",
+    "description": "JWT expiration token value"
+  },
+  {
+    "name": "foodDely.jwt.secret",
+    "type": "java.lang.String",
+    "description": "JWT secret value"
+  }
+]}
