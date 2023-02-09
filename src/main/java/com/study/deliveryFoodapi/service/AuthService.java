@@ -2,19 +2,29 @@ package com.study.deliveryFoodapi.service;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.study.deliveryFoodapi.Enums.ERole;
+import com.study.deliveryFoodapi.dto.User.LoginRequestDTO;
+import com.study.deliveryFoodapi.dto.User.RefreshTokenRequestDTO;
+import com.study.deliveryFoodapi.dto.User.RefreshTokenResponseDTO;
+import com.study.deliveryFoodapi.dto.User.RoleRequestDTO;
 import com.study.deliveryFoodapi.dto.User.SignupRegisterResponseDTO;
 import com.study.deliveryFoodapi.dto.User.SignupRequestDTO;
+import com.study.deliveryFoodapi.dto.User.SignupResponseDTO;
 import com.study.deliveryFoodapi.exception.AccountException;
+import com.study.deliveryFoodapi.exception.RefreshTokenException;
+import com.study.deliveryFoodapi.model.RefreshToken;
 import com.study.deliveryFoodapi.model.Role;
 import com.study.deliveryFoodapi.model.User;
 import com.study.deliveryFoodapi.repository.RoleRepository;
@@ -87,4 +97,122 @@ public class AuthService {
         return "Log out successful!";
     }
 
+    @Transactional
+    public RefreshTokenResponseDTO refreshtoken(RefreshTokenRequestDTO request) {
+        String requestRefreshToken = request.getRefreshToken();
+
+        return refreshTokenService.findByToken(requestRefreshToken)
+                .map(refreshTokenService::verifyExpiration)
+                .map(RefreshToken::getUser)
+                .map(user -> {
+                    if (!user.getIsActive()) {
+                        refreshTokenService.deleteByUserId(user.getId());
+                        throw new RefreshTokenException(requestRefreshToken, "Refresh token is not in database!");
+                    }
+                    String token = jwtUtils.generateTokenFromUsername(user.getUsername(), user.getId());
+                    List<Role> roles = user.getRoles().stream().collect(Collectors.toList());
+                    List<ERole> rolesList = roles.stream().map(Role::getName).collect(Collectors.toList());
+                    return new RefreshTokenResponseDTO(token, requestRefreshToken, user.getId(),
+                            user.getUsername(), user.getEmail(), rolesList);
+                })
+                .orElseThrow(() -> new RefreshTokenException(requestRefreshToken,
+                        "Refresh token is not in database!"));
+    }
+
+    @Transactional
+    public SignupRegisterResponseDTO removeRoles(RoleRequestDTO rolesIn, Long idUsuario) {
+        Optional<User> user = userRepository.findById(idUsuario);
+
+        if (!user.isPresent()) {
+            throw new AccountException("Error: User notFound");
+        }
+
+        Set<String> strRoles = rolesIn.getRoles();
+        Set<Role> roles = new HashSet<>();
+
+        for (String role : strRoles) {
+            ERole eRole;
+            switch (role) {
+                case "admin":
+                    eRole = ERole.ROLE_ADMIN;
+                    break;
+                default:
+                    eRole = null;
+            }
+            Role foundRole = roleRepository.findByName(eRole)
+                    .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+            roles.add(foundRole);
+        }
+
+        Set<Role> currentRoles = user.get().getRoles();
+        for (Role role : roles) {
+            if (role.getName().equals(ERole.ROLE_USER) && !currentRoles.contains(role)) {
+                throw new AccountException("Error: ROLE_USER cannot be removed");
+            }
+        }
+
+        currentRoles.removeAll(roles);
+        user.get().setRoles(currentRoles);
+        userRepository.save(user.get());
+
+        List<ERole> rolesList = currentRoles.stream().map(Role::getName).collect(Collectors.toList());
+
+        return new SignupRegisterResponseDTO(user.get(), rolesList);
+    }
+
+    @Transactional
+    public SignupRegisterResponseDTO newRoles(RoleRequestDTO rolesIn, Long idUsuario) {
+        Optional<User> user = userRepository.findById(idUsuario);
+
+        if (!user.isPresent()) {
+            throw new AccountException("Error: User notFound");
+        }
+
+        Set<String> strRoles = rolesIn.getRoles();
+        Set<Role> roles = new HashSet<>();
+
+        for (String role : strRoles) {
+            ERole eRole;
+            switch (role) {
+                case "admin":
+                    eRole = ERole.ROLE_ADMIN;
+                    break;
+                default:
+                    eRole = ERole.ROLE_USER;
+            }
+            Role foundRole = roleRepository.findByName(eRole)
+                    .orElseThrow(() -> new AccountException("Error: Role is not found."));
+            roles.add(foundRole);
+        }
+
+        Set<Role> currentRoles = user.get().getRoles();
+        currentRoles.addAll(roles);
+        user.get().setRoles(currentRoles);
+        userRepository.save(user.get());
+
+        List<ERole> rolesList = currentRoles.stream().map(Role::getName).collect(Collectors.toList());
+
+        return new SignupRegisterResponseDTO(user.get(), rolesList);
+    }
+
+    @Transactional
+    public SignupResponseDTO authenticateUser(LoginRequestDTO loginRequest) {
+        Authentication authentication = authenticationManager
+                .authenticate(new UsernamePasswordAuthenticationToken(loginRequest.getUsername(),
+                        loginRequest.getPassword()));
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        UserDetailsImplements userDetails = (UserDetailsImplements) authentication.getPrincipal();
+
+        String jwt = jwtUtils.generateJwtToken(userDetails);
+
+        List<String> roles = userDetails.getAuthorities().stream().map(item -> item.getAuthority())
+                .collect(Collectors.toList());
+
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(userDetails.getId());
+
+        return new SignupResponseDTO(jwt, refreshToken.getToken(), userDetails.getId(), userDetails.getUsername(),
+                userDetails.getEmail(), roles);
+    }
 }
