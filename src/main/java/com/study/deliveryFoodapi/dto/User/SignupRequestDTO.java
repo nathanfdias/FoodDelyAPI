@@ -5,9 +5,13 @@ import com.study.deliveryFoodapi.model.User;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
 public class SignupRequestDTO {
     @NotBlank
     @Size(min = 3, max = 20)

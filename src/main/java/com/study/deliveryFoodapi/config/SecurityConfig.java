@@ -70,11 +70,13 @@ public class SecurityConfig {
     protected SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http.cors().and().csrf().disable().authorizeHttpRequests()
-                .requestMatchers(HttpMethod.GET, "/api/categories").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/categories/{id}").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/products").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/products/search").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/products/{id}").permitAll()
+                .requestMatchers(HttpMethod.GET, "/categories").permitAll()
+                .requestMatchers(HttpMethod.GET, "/categories/{id}").permitAll()
+                .requestMatchers(HttpMethod.GET, "/products").permitAll()
+                .requestMatchers(HttpMethod.GET, "/products/search").permitAll()
+                .requestMatchers(HttpMethod.GET, "/products/{id}").permitAll()
+                .requestMatchers(HttpMethod.POST, "/auth/signin").permitAll()
+                .requestMatchers(HttpMethod.POST, "/auth/signup").permitAll()
                 .requestMatchers("/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
                 .anyRequest()
                 .authenticated().and().exceptionHandling().accessDeniedHandler(new AccessDeniedHandlerImpl()).and()
