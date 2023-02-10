@@ -1,6 +1,7 @@
 package com.study.deliveryFoodapi.model;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import com.study.deliveryFoodapi.Enums.EStatus;
 
@@ -31,7 +32,7 @@ public class UserPurchase {
 
     @ManyToOne
     @JoinColumn(name = "purchase_id", referencedColumnName = "id")
-    private Purchase purchase;
+    private List<Purchase> purchases;
 
     @Column(name = "total_price", nullable = false)
     private double totalPrice;

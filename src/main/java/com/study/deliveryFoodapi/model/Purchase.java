@@ -1,5 +1,6 @@
 package com.study.deliveryFoodapi.model;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -22,7 +23,8 @@ public class Purchase {
 
     private int quantity;
 
-    private double unit_price;
+    @Column(name = "unit_price")
+    private double unitPrice;
 
     @ManyToOne
     @JoinColumn(name = "product_id")
