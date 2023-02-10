@@ -17,6 +17,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class UserPurchaseResponseDTO {
 
+    private Long id;
     private UserResponseDTO user;
     private double totalPrice;
     private EStatus purchaseStatus;
@@ -24,6 +25,7 @@ public class UserPurchaseResponseDTO {
     private List<PurchaseResponseDTO> purchases = new ArrayList<>();
 
     public UserPurchaseResponseDTO(UserPurchase userPurchase) {
+        this.id = userPurchase.getId();
         this.user = new UserResponseDTO(userPurchase.getUser());
         this.totalPrice = userPurchase.getTotalPrice();
         this.purchaseStatus = userPurchase.getPurchaseStatus();

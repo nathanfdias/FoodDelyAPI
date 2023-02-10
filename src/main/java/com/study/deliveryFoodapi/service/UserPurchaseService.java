@@ -69,11 +69,15 @@ public class UserPurchaseService {
         userPurchase.setPurchaseDate(LocalDateTime.now());
         Double totalPrice = 0.0;
         for (PurchaseProductRequestDTO purchase : request.getPurchases()) {
+
+            Product product = productRepository.findById(purchase.getProduct().getId())
+                .orElseThrow(() -> new ProductException("Could not find product, id = " + purchase.getProduct().getId()));
+
             purchase.setProduct(
-                    productRepository.findById(purchase.getProduct().getId()).map(ProductIdDTO::new).orElseThrow(
-                            () -> new ProductException("Product not found with id " + purchase.getProduct().getId())));
-            totalPrice += purchase.getUnitPrice() * purchase.getQuantity();
-        }
+                productRepository.findById(purchase.getProduct().getId()).map(ProductIdDTO::new).orElseThrow(
+                    () -> new ProductException("Product not found with id " + purchase.getProduct().getId())));
+                    totalPrice += product.getPrice() * purchase.getQuantity();
+                }
         userPurchase.setTotalPrice(totalPrice);
         userPurchase = userPurchaseRepository.save(userPurchase);
 
@@ -83,6 +87,7 @@ public class UserPurchaseService {
             purchaseTransfer.add(purchaseTransferObject(purchaseProductRequestDTO)));
 
         for (Purchase p : purchaseTransfer){
+            p.setUserPurchase(userPurchase);
             purchaseRepository.save(p);
         }
 
@@ -96,7 +101,7 @@ public class UserPurchaseService {
                 .orElseThrow(() -> new ProductException("Could not find product, id = " + purchaseDTO.getProduct().getId()));
 
         purchase.setProduct(product);
-        purchase.setUnitPrice(purchaseDTO.getUnitPrice());
+        purchase.setUnitPrice(product.getPrice());
         purchase.setQuantity(purchaseDTO.getQuantity());
 
         return purchase;

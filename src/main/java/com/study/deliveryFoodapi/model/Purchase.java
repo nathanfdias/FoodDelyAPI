@@ -27,6 +27,10 @@ public class Purchase {
     private double unitPrice;
 
     @ManyToOne
+    @JoinColumn(name = "user_purchase_id")
+    private UserPurchase userPurchase;
+
+    @ManyToOne
     @JoinColumn(name = "product_id")
     private Product product;
 
