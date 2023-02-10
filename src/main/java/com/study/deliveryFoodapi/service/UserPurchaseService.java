@@ -91,7 +91,7 @@ public class UserPurchaseService {
             purchaseRepository.save(p);
         }
 
-        return new UserPurchaseResponseDTO(userPurchase);
+        return new UserPurchaseResponseDTO(userPurchase, purchaseTransfer);
     }
 
     private Purchase purchaseTransferObject(PurchaseProductRequestDTO purchaseDTO) {

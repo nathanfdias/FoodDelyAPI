@@ -6,6 +6,7 @@ import java.util.List;
 
 import com.study.deliveryFoodapi.Enums.EStatus;
 import com.study.deliveryFoodapi.dto.User.UserResponseDTO;
+import com.study.deliveryFoodapi.model.Purchase;
 import com.study.deliveryFoodapi.model.UserPurchase;
 
 import lombok.Getter;
@@ -33,6 +34,11 @@ public class UserPurchaseResponseDTO {
         if (userPurchase.getPurchases() != null) {
             userPurchase.getPurchases().forEach(purchase -> purchases.add(new PurchaseResponseDTO(purchase)));
         }
+    }
+
+    public UserPurchaseResponseDTO(UserPurchase userPurchase, List<Purchase> purchases) {
+        this(userPurchase);
+        purchases.forEach(p -> this.purchases.add(new PurchaseResponseDTO(p)));
     }
 
 }

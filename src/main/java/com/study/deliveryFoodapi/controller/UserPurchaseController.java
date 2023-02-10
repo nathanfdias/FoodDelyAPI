@@ -35,6 +35,8 @@ public class UserPurchaseController {
     private UserPurchaseService userPurchaseService;
 
     @GetMapping
+    @SecurityRequirement(name = "token")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     @Operation(summary = "Search All UserPurchase", description = "Search All UserPurchase", responses = {
             @ApiResponse(responseCode = "200", description = "UserPurchase found!"),
             @ApiResponse(responseCode = "400", ref = "BadRequest"),
