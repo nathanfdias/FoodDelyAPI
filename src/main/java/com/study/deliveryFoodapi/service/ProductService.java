@@ -21,82 +21,129 @@ import jakarta.transaction.Transactional;
 
 @Service
 public class ProductService {
-    
+
     @Autowired
     private ProductRepository productRepository;
 
     @Autowired
     private CategoryRepository categoryRepository;
-    
-    
+
     public List<ProductResponseDTO> findAllProducts() {
         return productRepository.findAll().stream()
-            .map(ProductResponseDTO::new).collect(Collectors.toList());
+                .map(ProductResponseDTO::new).collect(Collectors.toList());
     }
 
-    public Page<ProductResponseDTO> searchProducts(String name,Boolean isActive, Pageable pageable) {
-        Page<Product> products = productRepository.findByNameContainingIgnoreCaseAndIsActive(name, isActive, pageable);
-        return products.map(ProductResponseDTO::new);
-    }
-
-    public ProductResponseDTO findProductById(Long id){
-        return productRepository.findById(id).map(ProductResponseDTO::new).orElseThrow(() -> new ProductException("Could not find product id = " + id));
+    public ProductResponseDTO findProductById(Long id) {
+        return productRepository.findById(id).map(ProductResponseDTO::new)
+                .orElseThrow(() -> new ProductException("Could not find product with id " + id));
     }
 
     @Transactional
-    public ProductResponseDTO insertProduct(ProductRequestDTO product){
-
-        if(productRepository.existsByNameIgnoreCase(product.getName())){
-            throw new ProductException("The product already exists");
+    public ProductResponseDTO insertProduct(ProductRequestDTO product) {
+        if (productRepository.existsByNameIgnoreCase(product.getName())) {
+            throw new ProductException("The category already exists");
         }
 
-        Category cat = categoryRepository.findById(product.getCategory().getId()).orElseThrow(() -> new CategoryException("Could not find category id = " + product.getCategory().getId()));
-        
-        Product prd = new Product();
-        prd.setName(product.getName());
-        prd.setDescription(product.getDescription());
-        prd.setPrice(product.getPrice());
-        prd.setQuantity(product.getQuantity());
-        prd.setImageUrl(product.getImageUrl());
-        prd.setIsActive(true);
-        prd.setCategory(cat);
-        prd = productRepository.save(prd);
+        Category cat = categoryRepository.findById(product.getCategory().getId())
+                .orElseThrow(() -> new CategoryException("Could not find category id"
+                        + product.getCategory().getId()));
 
-        return new ProductResponseDTO(prd);
+        Product p = new Product();
+        p.setName(product.getName());
+        p.setDescription(product.getDescription());
+        p.setPrice(product.getPrice());
+        p.setQuantity(product.getQuantity());
+        p.setImageUrl(product.getImageUrl());
+        p.setIsActive(true);
+        p.setCategory(cat);
+
+        p = productRepository.save(p);
+
+        return new ProductResponseDTO(p);
     }
 
     @Transactional
-    public ProductResponseDTO updateProduct(Long id, ProductRequestDTO product){
+    public ProductResponseDTO updateProduct(Long id, ProductResponseDTO productRequest) {
 
-        Product prd = productRepository.findById(id).orElseThrow(() -> new ProductException("Could not find product id = " + id));
+        Product p = productRepository.findById(id).orElseThrow(() -> new ProductException("Could not find product id"
+                + id));
 
-        String name = product.getName();
+        String name = productRequest.getName();
 
-        if (!prd.getName().equalsIgnoreCase(name) && productRepository.existsByNameIgnoreCase(name)) {
+        if (!p.getName().equalsIgnoreCase(name) && productRepository.existsByNameIgnoreCase(name)) {
             throw new ProductException("Name already exists for category name = " + name);
         }
 
-        Category cat = categoryRepository.findById(product.getCategory().getId()).orElseThrow(() -> new CategoryException("Could not find category id = " + product.getCategory().getId()));
+        Category cat = categoryRepository.findById(productRequest.getCategory().getId())
+                .orElseThrow(() -> new CategoryException("Could not find category id"
+                        + productRequest.getCategory().getId()));
 
-        prd.setName(product.getName());
-        prd.setDescription(product.getDescription());
-        prd.setPrice(product.getPrice());
-        prd.setQuantity(product.getQuantity());
-        prd.setImageUrl(product.getImageUrl());
-        prd.setIsActive(true);
-        prd.setCategory(cat);
+        p.setName(name);
+        p.setDescription(productRequest.getDescription());
+        p.setPrice(productRequest.getPrice());
+        p.setQuantity(productRequest.getQuantity());
+        p.setImageUrl(productRequest.getImageUrl());
+        p.setIsActive(true);
+        p.setCategory(cat);
 
-        prd = productRepository.save(prd);
-        return new ProductResponseDTO(prd);
+        p = productRepository.save(p);
+        return new ProductResponseDTO(p);
     }
 
     @Transactional
+
     public void deleteProduct(Long id) {
         Product product = productRepository.findById(id)
-            .orElseThrow(() -> new ProductException("Could not find product id = " + id));
-    
-            product.setIsActive(false);
-            productRepository.save(product);
+                .orElseThrow(() -> new ProductException("Could not find product id=" + id));
+
+        product.setIsActive(false);
+        productRepository.save(product);
+    }
+
+    public Page<ProductResponseDTO> findAllProductsPageable(Boolean isActive, Pageable pageable) {
+        Page<Product> products = productRepository.findByIsActive(isActive, pageable);
+        return products.map(ProductResponseDTO::new);
+    }
+
+    public Page<ProductResponseDTO> findAllProductsByCategyPageable(String categoryName, Boolean isActive,
+            Pageable pageable) {
+        Page<Product> products = productRepository.findByCategory_NameIgnoreCaseAndIsActive(categoryName, isActive,
+                pageable);
+        return products.map(ProductResponseDTO::new);
+    }
+
+    public Page<ProductResponseDTO> searchProductsByCategories(String name, String categoryName, boolean isActive,
+            Pageable pageable) {
+        if (pageable == null || pageable.getPageNumber() < 0 || pageable.getPageSize() < 1) {
+            throw new ProductException("Invalid page request");
         }
-    
+
+        Page<Product> products = productRepository.findByNameContainingIgnoreCaseAndCategory_NameIgnoreCaseAndIsActive(
+                name,
+                categoryName, isActive, pageable);
+
+        if (products == null || products.isEmpty()) {
+            throw new ProductException(
+                    "No products found for name: " + name + " and isActive: " + isActive + " and category: "
+                            + categoryName);
+        }
+
+        return products.map(ProductResponseDTO::new);
+    }
+
+    public Page<ProductResponseDTO> searchProducts(String name, Boolean isActive, Pageable pageable) {
+
+        if (pageable == null || pageable.getPageNumber() < 0 || pageable.getPageSize() < 1) {
+            throw new ProductException("Invalid page request");
+        }
+
+        Page<Product> products = productRepository.findByNameContainingIgnoreCaseAndIsActive(name, isActive, pageable);
+
+        if (products == null || products.isEmpty()) {
+            throw new ProductException("No products found for name: " + name + " and isActive: " + isActive);
+        }
+
+        return products.map(ProductResponseDTO::new);
+    }
+
 }
