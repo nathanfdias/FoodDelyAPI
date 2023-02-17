@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -18,9 +19,11 @@ import com.study.deliveryFoodapi.dto.User.RoleRequestDTO;
 import com.study.deliveryFoodapi.dto.User.SignupRegisterResponseDTO;
 import com.study.deliveryFoodapi.dto.User.SignupRequestDTO;
 import com.study.deliveryFoodapi.dto.User.SignupResponseDTO;
+import com.study.deliveryFoodapi.dto.User.UserLoggedResponseDTO;
 import com.study.deliveryFoodapi.exception.AccountException;
 import com.study.deliveryFoodapi.exception.ApiError;
 import com.study.deliveryFoodapi.exception.RefreshTokenException;
+import com.study.deliveryFoodapi.exception.UserException;
 import com.study.deliveryFoodapi.service.AuthService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -98,7 +101,7 @@ public class AuthController {
 
     @PostMapping("/refreshtoken")
     @Operation(summary = "Refresh Token", description = "Refresh Token", responses = {
-            @ApiResponse(responseCode = "200", description = "Successfully Refresh Token!", content = @Content(mediaType = "application/json", schema = @Schema(implementation = RefreshTokenRequestDTO.class))),
+            @ApiResponse(responseCode = "200", description = "Successfully Refresh Token!", content = @Content(mediaType = "application/json", schema = @Schema(implementation = RefreshTokenResponseDTO.class))),
             @ApiResponse(responseCode = "400", ref = "BadRequest"),
             @ApiResponse(responseCode = "401", ref = "badcredentials"),
             @ApiResponse(responseCode = "422", ref = "unprocessableEntity"),
@@ -124,6 +127,25 @@ public class AuthController {
     })
     public ResponseEntity<String> logoutUser() {
         return ResponseEntity.ok(authService.logoutUser());
+    }
+
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    @GetMapping("/logged")
+    @SecurityRequirement(name = "token")
+    @Operation(summary = "Get Logged User", description = "Get Logged User", responses = {
+            @ApiResponse(responseCode = "200", description = "Successfully get User!", content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserLoggedResponseDTO.class))),
+            @ApiResponse(responseCode = "400", ref = "BadRequest"),
+            @ApiResponse(responseCode = "401", ref = "badcredentials"),
+            @ApiResponse(responseCode = "500", ref = "internalServerError")
+    })
+    public ResponseEntity<Object> findLoggedUser() {
+        try {
+            return ResponseEntity.ok(authService.findLoggedUser());
+        } catch (UserException e) {
+            return ResponseEntity.unprocessableEntity()
+                    .body(new ApiError(HttpStatus.UNPROCESSABLE_ENTITY, "Unprocessable Entity",
+                            e.getLocalizedMessage()));
+        }
     }
 
 }

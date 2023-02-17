@@ -22,8 +22,10 @@ import com.study.deliveryFoodapi.dto.User.RoleRequestDTO;
 import com.study.deliveryFoodapi.dto.User.SignupRegisterResponseDTO;
 import com.study.deliveryFoodapi.dto.User.SignupRequestDTO;
 import com.study.deliveryFoodapi.dto.User.SignupResponseDTO;
+import com.study.deliveryFoodapi.dto.User.UserLoggedResponseDTO;
 import com.study.deliveryFoodapi.exception.AccountException;
 import com.study.deliveryFoodapi.exception.RefreshTokenException;
+import com.study.deliveryFoodapi.exception.UserException;
 import com.study.deliveryFoodapi.model.RefreshToken;
 import com.study.deliveryFoodapi.model.Role;
 import com.study.deliveryFoodapi.model.User;
@@ -60,11 +62,11 @@ public class AuthService {
     public SignupRegisterResponseDTO registerUser(SignupRequestDTO signUpRequest) {
 
         if (userRepository.existsByUsername(signUpRequest.getUsername())) {
-            throw new AccountException("Error: Username is already taken!");
+            throw new AccountException("Error: Username já em uso!");
         }
 
         if (userRepository.existsByEmailIgnoreCase(signUpRequest.getEmail())) {
-            throw new AccountException("Error: Email is already in use!");
+            throw new AccountException("Error: Email já em uso!");
         }
 
         User user = new User();
@@ -214,5 +216,13 @@ public class AuthService {
 
         return new SignupResponseDTO(jwt, refreshToken.getToken(), userDetails.getId(), userDetails.getUsername(),
                 userDetails.getEmail(), roles);
+    }
+
+    public UserLoggedResponseDTO findLoggedUser() {
+        UserDetailsImplements userDetails = (UserDetailsImplements) SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getPrincipal();
+        return userRepository.findById(userDetails.getId()).map(UserLoggedResponseDTO::new)
+                .orElseThrow(() -> new UserException("Could not find user"));
     }
 }
